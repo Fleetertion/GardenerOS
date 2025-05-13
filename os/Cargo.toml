@@ -1,6 +1,9 @@
 [package]
 name = "os"
 version = "0.1.0"
-edition = "2024"
+edition = "2021"
 
 [dependencies]
+
+[target.riscv64gc-unknown-none-elf]
+rustflags = ["-Clink-arg=-nostartfiles"]
