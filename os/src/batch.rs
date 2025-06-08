@@ -1,10 +1,13 @@
 use core::arch::asm;
 use core::cell::RefCell;
 use lazy_static::*;
+use crate::trap::TrapContext;
 
 const MAX_APP_NUM: usize = 16;
 const APP_BASE_ADDRESS: usize = 0x80400000;
 const APP_SIZE_LIMIT: usize = 0x20000;
+const USER_STACK_SIZE: usize = 4096 * 2;
+const KERNEL_STACK_SIZE: usize = 4096 * 2;
 
 struct AppManager {
     inner: RefCell<AppManagerInner>,
@@ -100,11 +103,6 @@ pub fn run_next_app() -> ! {
     panic!("Unreachable in batch::run_current_app!");
 }
 
-use crate::trap::TrapContext;
-
-const USER_STACK_SIZE: usize = 4096 * 2;
-const KERNEL_STACK_SIZE: usize = 4096 * 2;
-
 #[repr(align(4096))]
 struct KernelStack {
     data: [u8; KERNEL_STACK_SIZE],
@@ -134,3 +132,4 @@ impl UserStack {
         self.data.as_ptr() as usize + USER_STACK_SIZE
     }
 }
+

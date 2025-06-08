@@ -8,7 +8,7 @@ const LEN: usize = 100;
 
 #[no_mangle]
 fn main() -> i32 {
-    let p = 5u64; // 修改底数为5
+    let p = 5u64;
     let m = 998244353u64;
     let iter: usize = 200000;
     let mut s = [0u64; LEN];
@@ -19,10 +19,11 @@ fn main() -> i32 {
         s[next] = s[cur] * p % m;
         cur = next;
         if i % 10000 == 0 {
-            println!("power_5 [{}/{}]", i, iter); // 修改输出标识为power_5
+            println!("power_5 [{}/{}]", i, iter);
         }
     }
     println!("{}^{} = {}", p, iter, s[cur]);
-    println!("Test power_5 OK!"); // 修改测试成功信息
+    println!("Test power_5 OK!");
     0
 }
+

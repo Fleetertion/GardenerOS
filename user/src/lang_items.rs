@@ -13,3 +13,4 @@ fn panic_handler(panic_info: &PanicInfo) -> ! {
     }
     loop {}
 }
+

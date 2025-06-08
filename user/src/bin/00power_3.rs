@@ -26,3 +26,4 @@ fn main() -> i32 {
     println!("Test power_3 OK!");
     0
 }
+

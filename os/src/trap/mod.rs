@@ -1,5 +1,20 @@
-use core::arch::global_asm;
+mod context;
 
+use riscv::register::{
+    scause::{self, Exception, Trap, Interrupt},
+    stval,
+    stvec,
+    sie,
+    mtvec::TrapMode,
+};
+
+use crate::syscall::syscall;
+use crate::task::{exit_current_and_run_next, suspend_current_and_run_next};
+use crate::timer::set_next_trigger;
+
+pub use context::TrapContext;
+
+use core::arch::{global_asm, asm};
 global_asm!(include_str!("trap.S"));
 
 pub fn init() {
@@ -9,35 +24,13 @@ pub fn init() {
     }
 }
 
-mod context;
-
-use riscv::register::{
-    mtvec::TrapMode,
-    stvec,
-    scause::{
-        self,
-        Trap,
-        Exception,
-        Interrupt,
-    },
-    stval,
-    sie,
-};
-
-use crate::syscall::syscall;
-use crate::task::{
-    exit_current_and_run_next,
-    suspend_current_and_run_next,
-};
-
-use crate::timer::set_next_trigger;
-
 pub fn enable_timer_interrupt() {
     unsafe { sie::set_stimer(); }
 }
 
 #[no_mangle]
 pub fn trap_handler(cx: &mut TrapContext) -> &mut TrapContext {
+    set_kernel_trap_entry();
     let scause = scause::read();
     let stval = stval::read();
     match scause.cause() {
@@ -62,7 +55,48 @@ pub fn trap_handler(cx: &mut TrapContext) -> &mut TrapContext {
             panic!("Unsupported trap {:?}, stval = {:#x}!", scause.cause(), stval);
         }
     }
-    cx
+    trap_return();
 }
 
-pub use context::TrapContext;
+fn set_kernel_trap_entry() {
+    extern "C" { fn trap_from_kernel(); }
+    unsafe {
+        stvec::write(trap_from_kernel as usize, TrapMode::Direct);
+    }
+}
+
+fn set_user_trap_entry() {
+    use crate::config::TRAMPOLINE;
+    unsafe {
+        stvec::write(TRAMPOLINE as usize, TrapMode::Direct);
+    }
+}
+
+#[no_mangle]
+pub fn trap_return() -> ! {
+    set_user_trap_entry();
+    use crate::{config::TRAP_CONTEXT, task::current_user_token};
+    let trap_cx_ptr = TRAP_CONTEXT;
+    let user_satp = current_user_token();
+    extern "C" {
+        fn __alltraps();
+        fn __restore();
+    }
+    let restore_va = __restore as usize - __alltraps as usize + crate::config::TRAMPOLINE;
+    unsafe {
+        asm!(
+            "fence.i",
+            "jr {restore_va}",
+            restore_va = in(reg) restore_va,
+            in("a0") trap_cx_ptr,
+            in("a1") user_satp,
+            options(noreturn)
+        );
+    }
+}
+
+#[no_mangle]
+pub fn trap_from_kernel() -> ! {
+    panic!("a trap from kernel!");
+}
+
