@@ -1,12 +1,9 @@
 cargo:rerun-if-changed=../user/src/
 cargo:rerun-if-changed=../user/target/riscv64gc-unknown-none-elf/release/
-app_0: 00hello_world
-app_1: 00power_3
-app_2: 00write_a
-app_3: 01power_5
-app_4: 01store_fault
-app_5: 01write_b
-app_6: 02power
-app_7: 02power_7
-app_8: 02write_c
-app_9: 03sleep
+app_0: 01power_5
+app_1: 02power_7
+app_2: 03sleep
+app_3: getpid
+app_4: hello
+app_5: initproc
+app_6: user_shell
